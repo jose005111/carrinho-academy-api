@@ -1,9 +1,10 @@
 import {
   estadosExcluidos,
   excedeLotacao,
-  turmaNoPassado,
+  turmaEncerrada,
 } from './atribuicoes.logica';
 import { InscricaoEstado } from '../inscricoes/enums/inscricao-estado.enum';
+import { TurmaEstado } from '../turmas/enums/turma-estado.enum';
 
 describe('estadosExcluidos', () => {
   it('inclui sempre INSCRITO, CONCLUIDO e REPROVADO', () => {
@@ -31,19 +32,21 @@ describe('estadosExcluidos', () => {
   });
 });
 
-describe('turmaNoPassado', () => {
-  const agora = new Date('2026-10-24T00:00:00Z');
-
-  it('é verdadeiro quando a data de fim é anterior a agora', () => {
-    expect(turmaNoPassado(new Date('2026-01-01T00:00:00Z'), agora)).toBe(true);
+describe('turmaEncerrada', () => {
+  it('é verdadeiro quando a turma está encerrada', () => {
+    expect(turmaEncerrada(TurmaEstado.ENCERRADO)).toBe(true);
   });
 
-  it('é falso quando a data de fim é futura', () => {
-    expect(turmaNoPassado(new Date('2027-01-01T00:00:00Z'), agora)).toBe(false);
+  it('é falso para turmas em curso', () => {
+    expect(turmaEncerrada(TurmaEstado.EM_CURSO)).toBe(false);
   });
 
-  it('é falso quando não há data de fim', () => {
-    expect(turmaNoPassado(null, agora)).toBe(false);
+  it('é falso para turmas pendentes', () => {
+    expect(turmaEncerrada(TurmaEstado.PENDENTE)).toBe(false);
+  });
+
+  it('é falso para turmas canceladas', () => {
+    expect(turmaEncerrada(TurmaEstado.CANCELADA)).toBe(false);
   });
 });
 

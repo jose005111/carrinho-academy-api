@@ -10,17 +10,6 @@ import { CreateFormacaoDto } from './dto/create-formacao.dto';
 import { UpdateFormacaoDto } from './dto/update-formacao.dto';
 import { ImportReport, ParsedImport } from '../common/reports/report';
 
-export interface FormacaoFilters {
-  nome?: string;
-  tipo?: string;
-  formato?: string;
-  local?: string;
-  acesso_certificado?: string;
-  inicio_de?: string;
-  inicio_ate?: string;
-  formador_id?: string;
-}
-
 @Injectable()
 export class FormacoesService {
   constructor(
@@ -30,8 +19,10 @@ export class FormacoesService {
 
   create(dto: CreateFormacaoDto): Promise<Formacao> {
     const formacao = this.formacoesRepository.create({
-      ...dto,
-      inicio: dto.inicio ? new Date(dto.inicio) : undefined,
+      nome: dto.nome?.trim() || 'Formação',
+      descricao: dto.descricao,
+      nota: dto.nota,
+      carga_horaria: dto.carga_horaria ?? 0,
     });
     return this.formacoesRepository.save(formacao);
   }
@@ -61,12 +52,7 @@ export class FormacoesService {
   buildWhere(query: Record<string, string> = {}): FindOptionsWhere<Formacao> {
     const where: FindOptionsWhere<Formacao> = {};
     if (query.nome) where.nome = ILike(`%${query.nome}%`);
-    if (query.tipo) where.tipo = ILike(`%${query.tipo}%`);
-    if (query.formato) where.formato = ILike(`%${query.formato}%`);
-    if (query.local) where.local = ILike(`%${query.local}%`);
-    if (query.acesso_certificado) {
-      where.acesso_certificado = ILike(`%${query.acesso_certificado}%`);
-    }
+    if (query.descricao) where.descricao = ILike(`%${query.descricao}%`);
     return where;
   }
 
@@ -88,10 +74,10 @@ export class FormacoesService {
 
   async update(id: string, dto: UpdateFormacaoDto): Promise<Formacao> {
     const formacao = await this.findOne(id);
-    Object.assign(formacao, dto);
-    if (dto.inicio) {
-      formacao.inicio = new Date(dto.inicio);
-    }
+    if (dto.nome !== undefined) formacao.nome = dto.nome.trim() || formacao.nome;
+    if (dto.descricao !== undefined) formacao.descricao = dto.descricao;
+    if (dto.nota !== undefined) formacao.nota = dto.nota;
+    if (dto.carga_horaria !== undefined) formacao.carga_horaria = dto.carga_horaria;
     return this.formacoesRepository.save(formacao);
   }
 
@@ -101,7 +87,7 @@ export class FormacoesService {
       await this.formacoesRepository.remove(formacao);
     } catch {
       throw new ConflictException(
-        'Esta formação não pode ser eliminada porque tem formandos/formadores associados.',
+        'Esta formação não pode ser eliminada porque tem formandos/formadores/turmas associados.',
       );
     }
   }
@@ -113,12 +99,9 @@ export class FormacoesService {
     return formacoes.map((f) => ({
       id: f.id,
       nome: f.nome,
-      tipo: f.tipo,
-      formato: f.formato,
+      descricao: f.descricao ?? '',
+      nota: f.nota ?? '',
       carga_horaria: f.carga_horaria,
-      carga_horaria_anual: f.carga_horaria_anual ?? '',
-      local: f.local ?? '',
-      acesso_certificado: f.acesso_certificado ?? '',
       num_formandos: f.formandoFormacoes?.length ?? 0,
       num_formadores: f.formadorFormacoes?.length ?? 0,
     }));
@@ -136,44 +119,22 @@ export class FormacoesService {
 
     for (const [indice, row] of parsed.rows.entries()) {
       const linha = indice + 2;
-      const nome = (row.nome ?? '').trim();
-      if (!nome) {
-        relatorio.invalidos += 1;
-        if (relatorio.erros.length < 50) {
-          relatorio.erros.push({ linha, motivo: 'Nome em falta' });
-        }
-        continue;
-      }
+      const nome = (row.nome ?? '').trim() || 'Formação';
 
       const existe = await this.formacoesRepository.findOne({
-        where: { nome, tipo: (row.tipo ?? '').trim() || undefined },
+        where: { nome },
       });
       if (existe) {
         relatorio.repetidos += 1;
         continue;
       }
 
-      let cargaHoraria = (row.carga_horaria ?? '').trim();
-      if (cargaHoraria && !/^\d{1,2}:\d{2}$/.test(cargaHoraria)) {
-        const onlyDigits = cargaHoraria.replace(/\D/g, '');
-        cargaHoraria = onlyDigits.length === 4
-          ? `${onlyDigits.slice(0, 2)}:${onlyDigits.slice(2)}`
-          : '00:00';
-      }
-
       await this.formacoesRepository.save(
         this.formacoesRepository.create({
           nome,
-          tipo: (row.tipo ?? '').trim() || 'Curso',
-          formato: (row.formato ?? '').trim() || 'Presencial',
           descricao: row.descricao?.trim() || undefined,
           nota: row.nota?.trim() || undefined,
-          carga_horaria: cargaHoraria || '00:00',
-          carga_horaria_anual: row.carga_horaria_anual
-            ? Number(row.carga_horaria_anual) || undefined
-            : undefined,
-          local: row.local?.trim() || undefined,
-          acesso_certificado: row.acesso_certificado?.trim() || undefined,
+          carga_horaria: Number(row.carga_horaria) || 0,
         }),
       );
       relatorio.importados += 1;

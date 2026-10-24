@@ -8,6 +8,7 @@ import { Turma } from '../turmas/entities/turma.entity';
 import { Inscricao } from '../inscricoes/entities/inscricao.entity';
 import { InscricaoEstado } from '../inscricoes/enums/inscricao-estado.enum';
 import { InscricaoOrigem } from '../inscricoes/enums/inscricao-origem.enum';
+import { TurmaEstado } from '../turmas/enums/turma-estado.enum';
 import { Formando } from '../formandos/entities/formando.entity';
 import { ConfiguracoesService } from '../configuracoes/configuracoes.service';
 import { AuditoriaService } from '../auditoria/auditoria.service';
@@ -15,7 +16,7 @@ import { InscricaoBulkDto, FiltrosCandidatosDto } from './dto/atribuicoes.dto';
 import {
   estadosExcluidos,
   excedeLotacao,
-  turmaNoPassado,
+  turmaEncerrada,
 } from './atribuicoes.logica';
 
 export type MotivoIgnorado =
@@ -175,9 +176,10 @@ export class AtribuicoesService {
       ultima_formacao_em: 'ultima_formacao_em',
     };
     qb.orderBy(ordem[query.orderBy ?? ''] ?? 'f.nome', 'ASC');
-    qb.skip((page - 1) * limit).take(limit);
 
-    const [rows, total] = await qb.getManyAndCount();
+    const total = await qb.getCount();
+    qb.skip((page - 1) * limit).take(limit);
+    const raw = await qb.getRawMany();
 
     const inscritos = await this.inscricoesRepository.count({
       where: { turmaId, estado: InscricaoEstado.INSCRITO },
@@ -186,16 +188,15 @@ export class AtribuicoesService {
       turma.lotacao > 0 ? Math.max(turma.lotacao - inscritos, 0) : null;
 
     return {
-      data: rows.map((r) => ({
-        id: r.id,
-        nome: r.nome,
-        matricula: r.matricula,
-        genero: r.genero,
-        empresa: r.empresa?.nome ?? null,
-        empresa_id: r.empresa?.id ?? null,
-        total_formacoes: Number((r as Formando & { total_formacoes?: string }).total_formacoes ?? 0),
-        ultima_formacao_em:
-          (r as Formando & { ultima_formacao_em?: string }).ultima_formacao_em ?? null,
+      data: raw.map((r) => ({
+        id: r.f_id,
+        nome: r.f_nome,
+        matricula: r.f_matricula,
+        genero: r.f_genero,
+        empresa: r.empresa_nome ?? null,
+        empresa_id: r.empresa_id ?? null,
+        total_formacoes: Number(r.total_formacoes ?? 0),
+        ultima_formacao_em: r.ultima_formacao_em ?? null,
       })),
       meta: {
         total,
@@ -306,7 +307,7 @@ export class AtribuicoesService {
           continue;
         }
 
-        const concluida = turmaNoPassado(turma.dataFim);
+        const concluida = turmaEncerrada(turma.estado);
         const estado = concluida
           ? InscricaoEstado.CONCLUIDO
           : InscricaoEstado.INSCRITO;

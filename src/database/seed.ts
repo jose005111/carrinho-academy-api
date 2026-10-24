@@ -2,6 +2,7 @@ import 'reflect-metadata';
 import * as bcrypt from 'bcrypt';
 import { AppDataSource } from './data-source';
 import { Cargo } from '../common/enums/cargo.enum';
+import { Genero } from '../common/enums/genero.enum';
 import { User } from '../users/entities/user.entity';
 import { Perfil } from '../perfil/entities/perfil.entity';
 import { Empresa } from '../empresas/entities/empresa.entity';
@@ -12,6 +13,15 @@ import { Formacao } from '../formacoes/entities/formacao.entity';
 import { FormandoFormacao } from '../formando-formacao/entities/formando-formacao.entity';
 import { FormadorFormacao } from '../formador-formacao/entities/formador-formacao.entity';
 import { PerfilAcesso } from '../perfis/entities/perfil-acesso.entity';
+import { Turma } from '../turmas/entities/turma.entity';
+import { Inscricao } from '../inscricoes/entities/inscricao.entity';
+import { InscricaoEstado } from '../inscricoes/enums/inscricao-estado.enum';
+import { InscricaoOrigem } from '../inscricoes/enums/inscricao-origem.enum';
+import { TurmaEstado } from '../turmas/enums/turma-estado.enum';
+import { Tipo } from '../catalogos/entities/tipo.entity';
+import { Formato } from '../catalogos/entities/formato.entity';
+import { Funcao } from '../catalogos/entities/funcao.entity';
+import { Area } from '../catalogos/entities/area.entity';
 
 async function seed() {
   await AppDataSource.initialize();
@@ -37,6 +47,12 @@ async function seed() {
       queryRunner.manager.getRepository(FormandoFormacao);
     const formadorFormacaoRepo =
       queryRunner.manager.getRepository(FormadorFormacao);
+    const turmaRepo = queryRunner.manager.getRepository(Turma);
+    const inscricaoRepo = queryRunner.manager.getRepository(Inscricao);
+    const tipoRepo = queryRunner.manager.getRepository(Tipo);
+    const formatoRepo = queryRunner.manager.getRepository(Formato);
+    const funcaoRepo = queryRunner.manager.getRepository(Funcao);
+    const areaRepo = queryRunner.manager.getRepository(Area);
 
     // ---------------------------------------------------------------- usuarios
     const admin = await userRepo.save(
@@ -120,15 +136,35 @@ async function seed() {
     );
 
     // -------------------------------------------------------------- formandos
+    const funcaoOperacoes = await funcaoRepo.save(
+      funcaoRepo.create({ nome: 'Tecnico de Operacoes' }),
+    );
+    const funcaoEngenharia = await funcaoRepo.save(
+      funcaoRepo.create({ nome: 'Engenheira' }),
+    );
+    const funcaoManutencao = await funcaoRepo.save(
+      funcaoRepo.create({ nome: 'Supervisor de Manutencao' }),
+    );
+    const areaOperacoes = await areaRepo.save(
+      areaRepo.create({ nome: 'Direccao de Operacoes' }),
+    );
+    const areaTecnica = await areaRepo.save(
+      areaRepo.create({ nome: 'Direccao Tecnica' }),
+    );
+    const areaManutencao = await areaRepo.save(
+      areaRepo.create({ nome: 'Direccao de Manutencao' }),
+    );
+
     const jose = await formandoRepo.save(
       formandoRepo.create({
         id: 'cccccccc-cccc-4ccc-8ccc-ccccccccccc1',
         nome: 'Jose Silva',
-        sexo: 'homem',
+        sexo: 'Masculino',
+        genero: Genero.M,
         bi: '001234567LA041',
         matricula: 'F0001',
-        funcao: 'Tecnico de Operacoes',
-        areaDirecao: 'Direccao de Operacoes',
+        funcaoId: funcaoOperacoes.id,
+        areaId: areaOperacoes.id,
         totFormacoes: 1,
         empresa: sonangol,
         endereco: luanda,
@@ -138,11 +174,12 @@ async function seed() {
       formandoRepo.create({
         id: 'cccccccc-cccc-4ccc-8ccc-ccccccccccc2',
         nome: 'Maria Domingos',
-        sexo: 'mulher',
+        sexo: 'Feminino',
+        genero: Genero.F,
         bi: '002345678LA042',
         matricula: 'F0002',
-        funcao: 'Engenheira',
-        areaDirecao: 'Direccao Tecnica',
+        funcaoId: funcaoEngenharia.id,
+        areaId: areaTecnica.id,
         totFormacoes: 1,
         empresa: endiama,
         endereco: benguela,
@@ -152,11 +189,12 @@ async function seed() {
       formandoRepo.create({
         id: 'cccccccc-cccc-4ccc-8ccc-ccccccccccc3',
         nome: 'Paulo Kiala',
-        sexo: 'homem',
+        sexo: 'Masculino',
+        genero: Genero.M,
         bi: '003456789LA043',
         matricula: 'F0003',
-        funcao: 'Supervisor de Manutencao',
-        areaDirecao: 'Direccao de Manutencao',
+        funcaoId: funcaoManutencao.id,
+        areaId: areaManutencao.id,
         totFormacoes: 1,
         empresa: taag,
         endereco: lubango,
@@ -170,7 +208,7 @@ async function seed() {
         nome: 'Eng. Carlos Neto',
         bi: '100000001LA041',
         contacto: '+244 923 000 001',
-        sexo: 'homem',
+        sexo: 'Masculino',
       }),
     );
     const ana = await formadorRepo.save(
@@ -179,7 +217,7 @@ async function seed() {
         nome: 'Dra. Ana Lopes',
         bi: '100000002LA042',
         contacto: '+244 923 000 002',
-        sexo: 'mulher',
+        sexo: 'Feminino',
       }),
     );
 
@@ -188,43 +226,105 @@ async function seed() {
       formacaoRepo.create({
         id: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee1',
         nome: 'Seguranca no Trabalho',
-        tipo: 'Tecnica',
-        formato: 'Presencial',
         descricao: 'Normas e boas praticas de seguranca no ambiente laboral.',
-        carga_horaria: '08:00',
-        carga_horaria_anual: 40,
-        local: 'Luanda',
-        acesso_certificado: 'sim',
-        inicio: new Date('2026-03-02T08:00:00'),
+        carga_horaria: 40,
       }),
     );
     const gestaoProjetos = await formacaoRepo.save(
       formacaoRepo.create({
         id: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee2',
         nome: 'Gestao de Projectos',
-        tipo: 'Gestao',
-        formato: 'Online',
         descricao: 'Metodologias ageis e tradicionais de gestao de projectos.',
-        carga_horaria: '12:00',
-        carga_horaria_anual: 60,
-        acesso_certificado: 'nao',
-        inicio: new Date('2026-04-01T09:00:00'),
+        carga_horaria: 60,
       }),
     );
     const primeirosSocorros = await formacaoRepo.save(
       formacaoRepo.create({
         id: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee3',
         nome: 'Primeiros Socorros',
-        tipo: 'Saude',
-        formato: 'Presencial',
         descricao: 'Tecnicas basicas de primeiros socorros.',
-        carga_horaria: '04:00',
-        carga_horaria_anual: 20,
-        local: 'Lubango',
-        acesso_certificado: 'sim',
-        inicio: new Date('2026-05-04T08:00:00'),
+        carga_horaria: 20,
       }),
     );
+
+    // ------------------------------------------------- turmas + inscricoes (N:M)
+    const tipos = await tipoRepo.find();
+    const formatos = await formatoRepo.find();
+    const tipoCurso = tipos.find((t) => t.nome.toLowerCase() === 'curso') ?? tipos[0];
+    const formatoPresencial =
+      formatos.find((f) => f.nome.toLowerCase() === 'presencial') ?? formatos[0];
+
+    const turmaSeguranca = await turmaRepo.save(
+      turmaRepo.create({
+        formacaoId: seguranca.id,
+        tipoId: tipoCurso?.id ?? null,
+        formatoId: formatoPresencial?.id ?? null,
+        acessoCertificado: 'sim',
+        cargaDiaria: 8,
+        local: 'Luanda',
+        ano: 2026,
+        dataInicio: new Date('2026-03-02T08:00:00'),
+        dataFim: new Date('2026-03-06T17:00:00'),
+        lotacao: 20,
+        estado: TurmaEstado.EM_CURSO,
+        codigo: 'TRM-2026-0001',
+      }),
+    );
+    const turmaGestao = await turmaRepo.save(
+      turmaRepo.create({
+        formacaoId: gestaoProjetos.id,
+        tipoId: tipoCurso?.id ?? null,
+        formatoId:
+          formatos.find((f) => f.nome.toLowerCase() === 'online')?.id ?? null,
+        acessoCertificado: 'nao',
+        cargaDiaria: 4,
+        local: null,
+        ano: 2026,
+        dataInicio: new Date('2026-04-01T09:00:00'),
+        dataFim: null,
+        lotacao: 15,
+        estado: TurmaEstado.PENDENTE,
+        codigo: 'TRM-2026-0002',
+      }),
+    );
+    const turmaSocorros = await turmaRepo.save(
+      turmaRepo.create({
+        formacaoId: primeirosSocorros.id,
+        tipoId: tipoCurso?.id ?? null,
+        formatoId: formatoPresencial?.id ?? null,
+        acessoCertificado: 'sim',
+        cargaDiaria: 4,
+        local: 'Lubango',
+        ano: 2026,
+        dataInicio: new Date('2026-05-04T08:00:00'),
+        dataFim: new Date('2026-05-05T17:00:00'),
+        lotacao: 25,
+        estado: TurmaEstado.ENCERRADO,
+        codigo: 'TRM-2026-0003',
+      }),
+    );
+
+    await inscricaoRepo.save([
+      inscricaoRepo.create({
+        turmaId: turmaSeguranca.id,
+        associadoId: jose.id,
+        estado: InscricaoEstado.INSCRITO,
+        origem: InscricaoOrigem.MANUAL,
+      }),
+      inscricaoRepo.create({
+        turmaId: turmaGestao.id,
+        associadoId: maria.id,
+        estado: InscricaoEstado.INSCRITO,
+        origem: InscricaoOrigem.MANUAL,
+      }),
+      inscricaoRepo.create({
+        turmaId: turmaSocorros.id,
+        associadoId: paulo.id,
+        estado: InscricaoEstado.CONCLUIDO,
+        origem: InscricaoOrigem.RETROATIVA,
+        dataConclusao: new Date('2026-05-05T17:00:00'),
+      }),
+    ]);
 
     // -------------------------------------------- formando <-> formacao (N:M)
     await formandoFormacaoRepo.save([

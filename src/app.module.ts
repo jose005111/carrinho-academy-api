@@ -21,6 +21,8 @@ import { InscricoesModule } from "./inscricoes/inscricoes.module";
 import { AtribuicoesModule } from "./atribuicoes/atribuicoes.module";
 import { PermissoesModule } from "./permissoes/permissoes.module";
 import { PerfisModule } from "./perfis/perfis.module";
+import { CatalogosModule } from "./catalogos/catalogos.module";
+import { AnosLetivosModule } from "./anos-letivos/anos-letivos.module";
 
 @Module({
   imports: [
@@ -52,6 +54,8 @@ import { PerfisModule } from "./perfis/perfis.module";
     AtribuicoesModule,
     PermissoesModule,
     PerfisModule,
+    CatalogosModule,
+    AnosLetivosModule,
   ],
 })
 export class AppModule {}

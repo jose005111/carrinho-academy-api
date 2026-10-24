@@ -12,6 +12,8 @@ import { Empresa } from "../../empresas/entities/empresa.entity";
 import { Endereco } from "../../endereco/entities/endereco.entity";
 import { FormandoFormacao } from "../../formando-formacao/entities/formando-formacao.entity";
 import { Genero } from "../../common/enums/genero.enum";
+import { Funcao } from "../../catalogos/entities/funcao.entity";
+import { Area } from "../../catalogos/entities/area.entity";
 
 @Entity("formandos")
 export class Formando {
@@ -38,16 +40,19 @@ export class Formando {
   @Column({ type: "varchar", length: 30, unique: true })
   matricula: string;
 
-  @Column({ type: "varchar", length: 150, nullable: true })
-  funcao: string;
+  @Column({ name: "funcao_id", type: "uuid", nullable: true })
+  funcaoId: string | null;
 
-  @Column({
-    name: "area_direcao",
-    type: "varchar",
-    length: 150,
-    nullable: true,
-  })
-  areaDirecao: string;
+  @ManyToOne(() => Funcao, { onDelete: "SET NULL" })
+  @JoinColumn({ name: "funcao_id" })
+  funcao: Funcao | null;
+
+  @Column({ name: "area_id", type: "uuid", nullable: true })
+  areaId: string | null;
+
+  @ManyToOne(() => Area, { onDelete: "SET NULL" })
+  @JoinColumn({ name: "area_id" })
+  area: Area | null;
 
   @Column({ name: "tot_formacoes", type: "integer", default: 0 })
   totFormacoes: number;

@@ -12,6 +12,12 @@ import { Empresa } from '../empresas/entities/empresa.entity';
 import { Endereco } from '../endereco/entities/endereco.entity';
 import { ImportReport, ParsedImport } from '../common/reports/report';
 import { Genero } from '../common/enums/genero.enum';
+import { Inscricao } from '../inscricoes/entities/inscricao.entity';
+import { InscricaoEstado } from '../inscricoes/enums/inscricao-estado.enum';
+import { TurmaEstado } from '../turmas/enums/turma-estado.enum';
+import { FormandoFormacao } from '../formando-formacao/entities/formando-formacao.entity';
+import { Funcao } from '../catalogos/entities/funcao.entity';
+import { Area } from '../catalogos/entities/area.entity';
 
 function gerarMatricula(): string {
   return `FORM-${Date.now().toString(36)}-${Math.random()
@@ -27,8 +33,18 @@ function generoFromSexo(sexo: string | null | undefined): Genero | null {
   return null;
 }
 
-export interface FormandoFront extends Formando {
-  area?: string;
+function normalizarSexo(sexo: string): string {
+  const valor = (sexo ?? '').trim().toLowerCase();
+  if (['homem', 'masculino', 'm'].includes(valor)) return 'Masculino';
+  if (['mulher', 'feminino', 'f'].includes(valor)) return 'Feminino';
+  return (sexo ?? '').trim() || 'Masculino';
+}
+
+export interface FormandoFront extends Omit<Formando, 'funcao' | 'area'> {
+  funcao: string | null;
+  area: string | null;
+  funcao_id?: string | null;
+  area_id?: string | null;
   empresa_id?: string;
   endereco_id?: string;
   formacos: unknown[];
@@ -41,6 +57,14 @@ export class FormandosService {
     private readonly formandosRepository: Repository<Formando>,
     @InjectRepository(Empresa)
     private readonly empresasRepository: Repository<Empresa>,
+    @InjectRepository(Inscricao)
+    private readonly inscricoesRepository: Repository<Inscricao>,
+    @InjectRepository(FormandoFormacao)
+    private readonly formandoFormacaoRepository: Repository<FormandoFormacao>,
+    @InjectRepository(Funcao)
+    private readonly funcoesRepository: Repository<Funcao>,
+    @InjectRepository(Area)
+    private readonly areasRepository: Repository<Area>,
   ) {}
 
   async create(dto: CreateFormandoDto): Promise<Formando> {
@@ -57,12 +81,12 @@ export class FormandosService {
 
     const formando = this.formandosRepository.create({
       nome: dto.nome,
-      sexo: dto.sexo,
+      sexo: normalizarSexo(dto.sexo),
       genero: generoFromSexo(dto.sexo),
       bi: dto.bi,
       matricula: dto.matricula || gerarMatricula(),
-      funcao: dto.funcao,
-      areaDirecao: dto.areaDirecao ?? dto.area,
+      funcaoId: dto.funcao_id ?? null,
+      areaId: dto.area_id ?? null,
       totFormacoes: dto.totFormacoes ?? 0,
       empresa: { id: empresaId } as Empresa,
       endereco: dto.enderecoId ?? dto.endereco_id
@@ -79,9 +103,9 @@ export class FormandosService {
     if (query.bi) where.bi = ILike(`%${query.bi}%`);
     if (query.matricula) where.matricula = ILike(`%${query.matricula}%`);
     if (query.sexo) where.sexo = query.sexo;
-    if (query.funcao) where.funcao = ILike(`%${query.funcao}%`);
+    if (query.funcao) where.funcao = { nome: ILike(`%${query.funcao}%`) };
     if (query.area || query.area_direcao) {
-      where.areaDirecao = ILike(`%${query.area ?? query.area_direcao}%`);
+      where.area = { nome: ILike(`%${query.area ?? query.area_direcao}%`) };
     }
     if (query.empresa_id) {
       where.empresa = { id: query.empresa_id };
@@ -96,6 +120,8 @@ export class FormandosService {
         relations: {
           empresa: true,
           endereco: true,
+          funcao: true,
+          area: true,
           formandoFormacoes: { formacao: true },
         },
         order: { nome: 'ASC' },
@@ -103,7 +129,10 @@ export class FormandosService {
       .then((formandos) =>
         formandos.map((f) => ({
           ...f,
-          area: f.areaDirecao,
+          funcao: f.funcao?.nome ?? null,
+          area: f.area?.nome ?? null,
+          funcao_id: f.funcaoId ?? null,
+          area_id: f.areaId ?? null,
           empresa_id: f.empresa?.id,
           endereco_id: f.endereco?.id,
           formacos: (f.formandoFormacoes ?? []).map((ff) => ff.formacao),
@@ -122,18 +151,102 @@ export class FormandosService {
     return formando;
   }
 
+  async formacoesComEstado(formandoId: string): Promise<Record<string, unknown>[]> {
+    const formando = await this.formandosRepository.findOne({
+      where: { id: formandoId },
+    });
+    if (!formando) throw new NotFoundException('Formando não encontrado');
+
+    const inscricoes = await this.inscricoesRepository.find({
+      where: { associadoId: formandoId },
+      relations: { turma: { formacao: true } },
+    });
+
+    const viaTurma = inscricoes.map((i) => ({
+      formacao_id: i.turma?.formacao?.id ?? null,
+      nome: i.turma?.formacao?.nome ?? '',
+      estado: i.estado,
+      origem: 'turma',
+      turma_codigo: i.turma?.codigo ?? null,
+    }));
+
+    const idsTurma = new Set(
+      viaTurma.map((v) => v.formacao_id).filter((id): id is string => !!id),
+    );
+
+    const diretas = await this.formandoFormacaoRepository.find({
+      where: { formandoId },
+      relations: { formacao: true },
+    });
+
+    const externa = diretas
+      .filter((d) => !idsTurma.has(d.formacaoId))
+      .map((d) => ({
+        formacao_id: d.formacaoId,
+        nome: d.formacao?.nome ?? '',
+        estado: 'CONCLUIDO',
+        origem: 'externa',
+        turma_codigo: null,
+      }));
+
+    return [...viaTurma, ...externa];
+  }
+
+  async findEmCurso(): Promise<Record<string, unknown>[]> {
+    const inscricoes = await this.inscricoesRepository.find({
+      where: { estado: InscricaoEstado.INSCRITO },
+      relations: {
+        turma: { formacao: true },
+        associado: { empresa: true, funcao: true, area: true },
+      },
+    });
+
+    const mapa = new Map<string, Record<string, unknown>>();
+    for (const i of inscricoes) {
+      if (i.turma?.estado !== TurmaEstado.EM_CURSO) continue;
+      const f = i.associado;
+      if (!f) continue;
+      if (!mapa.has(f.id)) {
+        mapa.set(f.id, {
+          id: f.id,
+          nome: f.nome,
+          bi: f.bi,
+          sexo: f.sexo,
+          matricula: f.matricula,
+          funcao: f.funcao?.nome ?? null,
+          funcao_id: f.funcaoId ?? null,
+          area: f.area?.nome ?? null,
+          area_id: f.areaId ?? null,
+          empresa: f.empresa ?? null,
+          empresa_id: f.empresa?.id ?? null,
+          formacao_atual: {
+            formacao_id: i.turma.formacao?.id ?? null,
+            nome: i.turma.formacao?.nome ?? '',
+            turma_id: i.turma.id,
+            turma_codigo: i.turma.codigo ?? null,
+          },
+        });
+      }
+    }
+
+    return [...mapa.values()].sort((a, b) =>
+      String(a.nome).localeCompare(String(b.nome)),
+    );
+  }
+
   async update(id: string, dto: UpdateFormandoDto): Promise<Formando> {
     const formando = await this.findOne(id);
-    Object.assign(formando, dto);
+    if (dto.nome !== undefined) formando.nome = dto.nome;
+    if (dto.bi !== undefined) formando.bi = dto.bi;
+    if (dto.matricula !== undefined) formando.matricula = dto.matricula;
+    if (dto.totFormacoes !== undefined) formando.totFormacoes = dto.totFormacoes;
     if (dto.sexo !== undefined) {
+      formando.sexo = normalizarSexo(dto.sexo);
       formando.genero = generoFromSexo(dto.sexo);
     }
-    if (dto.areaDirecao !== undefined) {
-      formando.areaDirecao = dto.areaDirecao;
-    }
-    if (dto.area !== undefined) {
-      formando.areaDirecao = dto.area;
-    }
+    if (dto.funcao_id !== undefined) formando.funcaoId = dto.funcao_id ?? null;
+    if (dto.area_id !== undefined) formando.areaId = dto.area_id ?? null;
+
     const empresaId = dto.empresaId ?? dto.empresa_id;
     if (empresaId) {
       const empresa = await this.empresasRepository.findOne({
@@ -171,10 +284,34 @@ export class FormandosService {
       sexo: f.sexo,
       bi: f.bi,
       funcao: f.funcao ?? '',
-      area: f.areaDirecao ?? '',
+      area: f.area ?? '',
       empresa: f.empresa?.nome ?? '',
       num_formacoes: f.formacos?.length ?? 0,
     }));
+  }
+
+  private async resolverOuCriarFuncao(nome: string | undefined): Promise<string | null> {
+    const valor = (nome ?? '').trim();
+    if (!valor) return null;
+    let funcao = await this.funcoesRepository.findOne({ where: { nome: valor } });
+    if (!funcao) {
+      funcao = await this.funcoesRepository.save(
+        this.funcoesRepository.create({ nome: valor }),
+      );
+    }
+    return funcao.id;
+  }
+
+  private async resolverOuCriarArea(nome: string | undefined): Promise<string | null> {
+    const valor = (nome ?? '').trim();
+    if (!valor) return null;
+    let area = await this.areasRepository.findOne({ where: { nome: valor } });
+    if (!area) {
+      area = await this.areasRepository.save(
+        this.areasRepository.create({ nome: valor }),
+      );
+    }
+    return area.id;
   }
 
   async importFromFile(parsed: ParsedImport): Promise<ImportReport> {
@@ -232,15 +369,19 @@ export class FormandosService {
         continue;
       }
 
+      const sexo = normalizarSexo(row.sexo ?? '');
+      const funcaoId = await this.resolverOuCriarFuncao(row.funcao);
+      const areaId = await this.resolverOuCriarArea(row.area ?? row.area_direcao);
+
       await this.formandosRepository.save(
         this.formandosRepository.create({
           nome,
-          sexo: (row.sexo ?? '').trim() || 'Masculino',
-          genero: generoFromSexo((row.sexo ?? '').trim() || 'Masculino'),
+          sexo,
+          genero: generoFromSexo(sexo),
           bi,
           matricula: (row.matricula ?? '').trim() || gerarMatricula(),
-          funcao: row.funcao?.trim() || undefined,
-          areaDirecao: row.area ?? row.area_direcao ?? undefined,
+          funcaoId,
+          areaId,
           totFormacoes: 0,
           empresa: { id: empresaId } as Empresa,
         }),

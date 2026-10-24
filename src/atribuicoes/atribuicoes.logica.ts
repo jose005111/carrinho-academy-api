@@ -1,4 +1,5 @@
 import { InscricaoEstado } from '../inscricoes/enums/inscricao-estado.enum';
+import { TurmaEstado } from '../turmas/enums/turma-estado.enum';
 
 /**
  * Estados que impedem um associado de ser sugerido como candidato
@@ -18,12 +19,9 @@ export function estadosExcluidos(
   return estados;
 }
 
-/** Verdadeiro quando a data de fim da turma é anterior a `agora`. */
-export function turmaNoPassado(
-  dataFim: Date | null,
-  agora: Date = new Date(),
-): boolean {
-  return dataFim !== null && dataFim.getTime() < agora.getTime();
+/** Verdadeiro quando a turma está encerrada (pelo seu estado). */
+export function turmaEncerrada(estado: TurmaEstado): boolean {
+  return estado === TurmaEstado.ENCERRADO;
 }
 
 /** Verdadeiro quando a turma já atingiu o limite de formandos (0 = sem limite). */

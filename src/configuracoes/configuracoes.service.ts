@@ -165,8 +165,8 @@ export class ConfiguracoesService implements OnModuleInit {
       accao: 'configuracoes:editar',
       entidade: 'configuracoes',
       entidadeId: config.id,
-      antes: { valor: valorAntigo },
-      depois: { valor: valorNovo },
+      antes: { chave, valor: valorAntigo },
+      depois: { chave, valor: valorNovo },
       ip,
     });
 

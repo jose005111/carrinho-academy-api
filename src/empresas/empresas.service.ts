@@ -25,7 +25,7 @@ export class EmpresasService {
   findAll(query: Record<string, string> = {}): Promise<Empresa[]> {
     const qb = this.empresasRepository
       .createQueryBuilder("empresa")
-      .loadRelationCountAndMap("empresa.totalFormandos", "empresa.formandos")
+      .loadRelationCountAndMap("empresa.formandos", "empresa.formandos")
       .orderBy("empresa.nome", "ASC");
 
     if (query.nome) {
@@ -70,7 +70,7 @@ export class EmpresasService {
     return empresas.map((e) => ({
       id: e.id,
       nome: e.nome,
-      num_formandos: e.formandos?.length ?? 0,
+      num_formandos: Number(e.formandos ?? 0),
       createdAt: e.createdAt?.toLocaleString("pt-PT"),
     }));
   }

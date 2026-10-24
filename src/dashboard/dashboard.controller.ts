@@ -39,11 +39,8 @@ export class DashboardController {
       subtitle: `Carinho Academy • Gerado em ${new Date().toLocaleString('pt-PT')}`,
       columns: [
         { header: 'Nome', key: 'nome', width: 140 },
-        { header: 'Tipo', key: 'tipo', width: 80 },
-        { header: 'Formato', key: 'formato', width: 70 },
+        { header: 'Descrição', key: 'descricao', width: 140 },
         { header: 'Carga Horária', key: 'carga_horaria', width: 55 },
-        { header: 'Local', key: 'local', width: 90 },
-        { header: 'Certificado', key: 'acesso_certificado', width: 65 },
         { header: 'Nº Formandos', key: 'num_formandos', width: 50 },
         { header: 'Nº Formadores', key: 'num_formadores', width: 50 },
         { header: 'Criado em', key: 'created_at', width: 90 },

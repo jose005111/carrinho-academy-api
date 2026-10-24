@@ -44,6 +44,11 @@ export class FormandosController {
     return this.formandosService.findAll(query);
   }
 
+  @Get('em-curso')
+  emCurso() {
+    return this.formandosService.findEmCurso();
+  }
+
   @Get('export_pdf')
   async exportPdf(@Query() query: Record<string, string>, @Res() res: Response) {
     const rows = await this.formandosService.reportRows(query);
@@ -96,6 +101,11 @@ export class FormandosController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.formandosService.findOne(id);
+  }
+
+  @Get(':id/formacoes')
+  formacoes(@Param('id') id: string) {
+    return this.formandosService.formacoesComEstado(id);
   }
 
   @Patch(':id')
