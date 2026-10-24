@@ -1,11 +1,7 @@
 export interface FormacaoComoDto {
   id: string;
   nome: string;
-  tipo: string;
-  formato: string;
-  carga_horaria: string;
-  local: string | null;
-  acesso_certificado: string | null;
+  carga_horaria: number;
 }
 
 export interface FormadorResponseDto {

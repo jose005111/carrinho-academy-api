@@ -9,6 +9,13 @@ import { ImportReport, ParsedImport } from "../common/reports/report";
 
 const RELACOES_FORMACOES = ["formadorFormacoes", "formadorFormacoes.formacao"];
 
+function normalizarSexo(sexo: string): string {
+  const v = (sexo ?? '').trim().toLowerCase();
+  if (['homem', 'masculino', 'm'].includes(v)) return 'Masculino';
+  if (['mulher', 'feminino', 'f'].includes(v)) return 'Feminino';
+  return (sexo ?? '').trim() || 'Masculino';
+}
+
 @Injectable()
 export class FormadoresService {
   constructor(
@@ -141,7 +148,7 @@ export class FormadoresService {
         this.formadoresRepository.create({
           nome,
           bi,
-          sexo: (row.sexo ?? '').trim() || 'homem',
+          sexo: normalizarSexo(row.sexo ?? ''),
           contacto: row.contacto?.trim() || undefined,
         }),
       );
@@ -164,11 +171,7 @@ export class FormadoresService {
       const item = {
         id: formacao.id,
         nome: formacao.nome,
-        tipo: formacao.tipo,
-        formato: formacao.formato,
         carga_horaria: formacao.carga_horaria,
-        local: formacao.local ?? null,
-        acesso_certificado: formacao.acesso_certificado ?? null,
       };
 
       if (associacao.supervisor) {

@@ -28,20 +28,13 @@ export class CreateFormandoDto {
   @MaxLength(30)
   matricula?: string;
 
-  @IsString()
+  @IsUUID()
   @IsOptional()
-  @MaxLength(150)
-  funcao?: string;
+  funcao_id?: string;
 
-  @IsString()
+  @IsUUID()
   @IsOptional()
-  @MaxLength(150)
-  areaDirecao?: string;
-
-  @IsString()
-  @IsOptional()
-  @MaxLength(150)
-  area?: string;
+  area_id?: string;
 
   @IsInt()
   @IsOptional()

@@ -64,9 +64,6 @@ export class DashboardService {
 
   private buildFormacaoFiltro(filtros: DashboardFiltros): Record<string, unknown> {
     const where: Record<string, unknown> = {};
-    if (filtros.tipo) where.tipo = filtros.tipo;
-    if (filtros.formato) where.formato = filtros.formato;
-    if (filtros.certificado) where.acesso_certificado = filtros.certificado;
     if (filtros.formador_id) {
       where.formadorFormacoes = { formadorId: filtros.formador_id };
     }
@@ -161,11 +158,8 @@ export class DashboardService {
     return formacoes.map((f) => ({
       id: f.id,
       nome: f.nome,
-      tipo: f.tipo,
-      formato: f.formato,
+      descricao: f.descricao ?? '',
       carga_horaria: f.carga_horaria,
-      local: f.local ?? '',
-      acesso_certificado: f.acesso_certificado ?? '',
       num_formandos: f.formandoFormacoes?.length ?? 0,
       num_formadores: f.formadorFormacoes?.length ?? 0,
       created_at: f.createdAt?.toLocaleString('pt-PT'),

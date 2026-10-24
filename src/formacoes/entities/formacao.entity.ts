@@ -17,32 +17,15 @@ export class Formacao {
   @Column({ type: "varchar", length: 150 })
   nome: string;
 
-  @Column({ type: "varchar", length: 100 })
-  tipo: string;
-
-  @Column({ type: "varchar", length: 100 })
-  formato: string;
-
   @Column({ type: "text", nullable: true })
   descricao: string;
 
   @Column({ type: "varchar", nullable: true })
   nota: string;
 
-  @Column({ name: "carga_horaria", type: "varchar" })
-  carga_horaria: string;
-
-  @Column({ name: "carga_horaria_anual", type: "int", nullable: true })
-  carga_horaria_anual: number;
-
-  @Column({ type: "varchar", length: 150, nullable: true })
-  local: string;
-
-  @Column({ type: "varchar", length: 100, nullable: true })
-  acesso_certificado: string;
-
-  @Column({ type: "timestamp", nullable: true })
-  inicio: Date;
+  // Carga horária total do curso/formação, em horas
+  @Column({ name: "carga_horaria", type: "integer", default: 0 })
+  carga_horaria: number;
 
   @OneToMany(
     () => FormandoFormacao,
