@@ -13,11 +13,13 @@
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "typeorm": "typeorm-ts-node-commonjs -d src/database/data-source.ts",
+    "migration:drop": "npm run typeorm -- schema:drop",
     "migration:generate": "npm run typeorm -- migration:generate",
     "migration:create": "npm run typeorm -- migration:create",
     "migration:run": "npm run typeorm -- migration:run",
     "migration:revert": "npm run typeorm -- migration:revert",
     "migration:show": "npm run typeorm -- migration:show",
+    "migration:reset": "npm run typeorm -- schema:drop && npm run migration:run && npm run seed",
     "seed": "ts-node src/database/seed.ts"
   },
   "dependencies": {
