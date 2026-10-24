@@ -11,11 +11,20 @@ import { UpdateFormandoDto } from './dto/update-formando.dto';
 import { Empresa } from '../empresas/entities/empresa.entity';
 import { Endereco } from '../endereco/entities/endereco.entity';
 import { ImportReport, ParsedImport } from '../common/reports/report';
+import { Genero } from '../common/enums/genero.enum';
 
 function gerarMatricula(): string {
   return `FORM-${Date.now().toString(36)}-${Math.random()
     .toString(36)
     .slice(2, 6)}`;
+}
+
+function generoFromSexo(sexo: string | null | undefined): Genero | null {
+  const valor = (sexo ?? '').trim().toLowerCase();
+  if (['homem', 'masculino', 'm'].includes(valor)) return Genero.M;
+  if (['mulher', 'feminino', 'f'].includes(valor)) return Genero.F;
+  if (['outro', 'outros', 'o'].includes(valor)) return Genero.OUTRO;
+  return null;
 }
 
 export interface FormandoFront extends Formando {
@@ -49,6 +58,7 @@ export class FormandosService {
     const formando = this.formandosRepository.create({
       nome: dto.nome,
       sexo: dto.sexo,
+      genero: generoFromSexo(dto.sexo),
       bi: dto.bi,
       matricula: dto.matricula || gerarMatricula(),
       funcao: dto.funcao,
@@ -115,6 +125,9 @@ export class FormandosService {
   async update(id: string, dto: UpdateFormandoDto): Promise<Formando> {
     const formando = await this.findOne(id);
     Object.assign(formando, dto);
+    if (dto.sexo !== undefined) {
+      formando.genero = generoFromSexo(dto.sexo);
+    }
     if (dto.areaDirecao !== undefined) {
       formando.areaDirecao = dto.areaDirecao;
     }
@@ -223,6 +236,7 @@ export class FormandosService {
         this.formandosRepository.create({
           nome,
           sexo: (row.sexo ?? '').trim() || 'Masculino',
+          genero: generoFromSexo((row.sexo ?? '').trim() || 'Masculino'),
           bi,
           matricula: (row.matricula ?? '').trim() || gerarMatricula(),
           funcao: row.funcao?.trim() || undefined,

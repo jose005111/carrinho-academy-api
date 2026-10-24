@@ -1,0 +1,6 @@
+export enum TurmaEstado {
+  AGENDADA = 'AGENDADA',
+  EM_CURSO = 'EM_CURSO',
+  CONCLUIDA = 'CONCLUIDA',
+  CANCELADA = 'CANCELADA',
+}

@@ -4,4 +4,5 @@ export type JwtPayload = {
   sub: string; // id do utilizador
   email: string;
   cargo: Cargo;
+  tokenVersion: number;
 };

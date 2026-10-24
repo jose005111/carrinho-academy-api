@@ -1,0 +1,7 @@
+export enum InscricaoEstado {
+  INSCRITO = 'INSCRITO',
+  CONCLUIDO = 'CONCLUIDO',
+  DESISTIU = 'DESISTIU',
+  REPROVADO = 'REPROVADO',
+  CANCELADO = 'CANCELADO',
+}

@@ -14,6 +14,13 @@ import { FormadoresModule } from "./formadores/formadores.module";
 import { FormadorFormacaoModule } from "./formador-formacao/formador-formacao.module";
 import { RootModule } from "./root/root.module";
 import { DashboardModule } from "./dashboard/dashboard.module";
+import { ConfiguracoesModule } from "./configuracoes/configuracoes.module";
+import { AuditoriaModule } from "./auditoria/auditoria.module";
+import { TurmasModule } from "./turmas/turmas.module";
+import { InscricoesModule } from "./inscricoes/inscricoes.module";
+import { AtribuicoesModule } from "./atribuicoes/atribuicoes.module";
+import { PermissoesModule } from "./permissoes/permissoes.module";
+import { PerfisModule } from "./perfis/perfis.module";
 
 @Module({
   imports: [
@@ -38,6 +45,13 @@ import { DashboardModule } from "./dashboard/dashboard.module";
     FormadorFormacaoModule,
     RootModule,
     DashboardModule,
+    ConfiguracoesModule,
+    AuditoriaModule,
+    TurmasModule,
+    InscricoesModule,
+    AtribuicoesModule,
+    PermissoesModule,
+    PerfisModule,
   ],
 })
 export class AppModule {}

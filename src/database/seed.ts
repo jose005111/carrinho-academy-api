@@ -11,6 +11,7 @@ import { Formador } from '../formadores/entities/formador.entity';
 import { Formacao } from '../formacoes/entities/formacao.entity';
 import { FormandoFormacao } from '../formando-formacao/entities/formando-formacao.entity';
 import { FormadorFormacao } from '../formador-formacao/entities/formador-formacao.entity';
+import { PerfilAcesso } from '../perfis/entities/perfil-acesso.entity';
 
 async function seed() {
   await AppDataSource.initialize();
@@ -56,7 +57,7 @@ async function seed() {
         perfil: { nome: 'Gestor de Formacao', foto: null },
       }),
     );
-    await userRepo.save(
+    const utilizador = await userRepo.save(
       userRepo.create({
         id: '33333333-3333-4333-8333-333333333333',
         email: 'utilizador@academy.ao',
@@ -65,6 +66,15 @@ async function seed() {
         perfil: { nome: 'Utilizador Comum', foto: null },
       }),
     );
+
+    // Associa o perfil de acesso (RBAC) correspondente a cada cargo
+    const perfilAcessoRepo = queryRunner.manager.getRepository(PerfilAcesso);
+    const perfisAcesso = await perfilAcessoRepo.find();
+    const porNome = new Map(perfisAcesso.map((p) => [p.nome, p.id]));
+    admin.perfilAcessoId = porNome.get('Super Admin') ?? null;
+    gestor.perfilAcessoId = porNome.get('Gestor de Formações') ?? null;
+    utilizador.perfilAcessoId = porNome.get('Consulta') ?? null;
+    await userRepo.save([admin, gestor, utilizador]);
 
     // --------------------------------------------------------------- empresas
     const sonangol = await empresaRepo.save(

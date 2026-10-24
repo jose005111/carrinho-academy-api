@@ -43,7 +43,7 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Get("me")
   me(@CurrentUser() user: User) {
-    return this.usersService.findOne(user.id);
+    return this.authService.me(user.id);
   }
 
   @Delete("logout")
